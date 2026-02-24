@@ -1,0 +1,1625 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpecFiesta 2K26 - Technical Fest | St. Peter's Engineering College</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:wght@400;700&family=Poppins:wght@400;600;700;800&family=Share+Tech+Mono&display=swap');
+
+        /* ===== SPLASH SCREEN STYLES ===== */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: #000;
+            transition: opacity 1s ease, visibility 1s ease;
+        }
+        #splash-screen.fade-out {
+            opacity: 0;
+            visibility: hidden;
+        }
+        #splash-screen canvas { position: fixed; inset: 0; }
+        #matrixCanvas { z-index: 1; opacity: 0.18; }
+        #gridCanvas { z-index: 2; opacity: 0.55; }
+        .vignette {
+            position: fixed; inset: 0; z-index: 5; pointer-events: none;
+            background: radial-gradient(ellipse 70% 60% at 50% 50%, transparent 30%, rgba(0,0,0,0.92) 100%);
+        }
+        .scanlines {
+            position: fixed; inset: 0; z-index: 6; pointer-events: none;
+            background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.12) 2px, rgba(0,0,0,0.12) 4px);
+        }
+        .stage {
+            position: fixed; inset: 0; z-index: 7;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            gap: 24px;
+        }
+        .accent-lines {
+            display: flex; align-items: center; gap: 12px;
+            opacity: 0; animation: splashFadeSlideDown 0.6s ease forwards 0.3s;
+        }
+        .accent-line {
+            height: 2px; width: 80px;
+            background: linear-gradient(90deg, transparent, #00f5ff);
+            box-shadow: 0 0 8px #00f5ff;
+        }
+        .accent-line.right { background: linear-gradient(90deg, #00f5ff, transparent); }
+        .accent-dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: #00f5ff;
+            box-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff;
+            animation: splashPulseDot 1.5s ease-in-out infinite;
+        }
+        .sub-label {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: clamp(10px, 1.2vw, 13px);
+            letter-spacing: 0.4em; color: #00f5ff;
+            opacity: 0; text-transform: uppercase;
+            animation: splashFadeSlideDown 0.6s ease forwards 0.5s;
+            text-shadow: 0 0 10px #00f5ff;
+        }
+        .main-text-wrap {
+            position: relative; display: flex; flex-direction: column;
+            align-items: center; gap: 4px;
+        }
+        .welcome-line {
+            font-family: 'Orbitron', sans-serif; font-weight: 400;
+            font-size: clamp(12px, 1.8vw, 20px); letter-spacing: 0.55em;
+            color: rgba(180,240,255,0.75); text-transform: uppercase;
+            text-shadow: 0 0 12px #00f5ff, 0 0 30px rgba(0,200,255,0.4);
+            opacity: 0; transform: translateY(-10px);
+            animation: splashFadeSlideDown 0.7s ease forwards 1s;
+        }
+        .spec-line {
+            position: relative; font-family: 'Orbitron', sans-serif;
+            font-weight: 900; font-size: clamp(40px, 9vw, 120px);
+            letter-spacing: 0.06em; line-height: 1;
+            background: linear-gradient(135deg, #fff 0%, #00f5ff 35%, #00aaff 60%, #0044ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; opacity: 0;
+            animation: splashSpecReveal 0.9s ease forwards 1.6s;
+        }
+        .year-line {
+            font-family: 'Orbitron', sans-serif; font-weight: 700;
+            font-size: clamp(26px, 5vw, 68px); letter-spacing: 0.35em;
+            background: linear-gradient(90deg, #00f5ff, #fff, #0066ff);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text; opacity: 0;
+            animation: splashFadeIn 0.9s ease forwards 2.5s;
+            filter: drop-shadow(0 0 20px #00f5ff) drop-shadow(0 0 40px #0066ff);
+        }
+        .divider {
+            display: flex; align-items: center; gap: 10px;
+            opacity: 0; animation: splashFadeIn 0.6s ease forwards 3.1s;
+        }
+        .div-line {
+            height: 1px; width: 120px;
+            background: linear-gradient(90deg, transparent, #00f5ff, transparent);
+            box-shadow: 0 0 6px #00f5ff;
+        }
+        .div-diamond {
+            width: 8px; height: 8px; background: #00f5ff;
+            transform: rotate(45deg);
+            box-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff;
+        }
+        .tagline-wrap {
+            height: 28px; opacity: 0;
+            animation: splashFadeIn 0.1s ease forwards 3.4s;
+        }
+        .tagline {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: clamp(10px, 1.4vw, 15px); letter-spacing: 0.25em;
+            color: rgba(0,245,255,0.7); text-shadow: 0 0 8px #00f5ff;
+        }
+        .t-cursor {
+            display: inline-block; width: 2px; height: 1em;
+            background: #00f5ff; vertical-align: middle;
+            box-shadow: 0 0 8px #00f5ff;
+            animation: splashBlink 0.7s step-end infinite;
+        }
+        .bracket {
+            position: fixed; width: 60px; height: 60px; opacity: 0; z-index: 7;
+            animation: splashFadeIn 0.5s ease forwards 3.2s;
+        }
+        .bracket::before, .bracket::after { content: ''; position: absolute; background: #00f5ff; box-shadow: 0 0 8px #00f5ff; }
+        .bracket.tl { top: 30px; left: 30px; }
+        .bracket.tl::before { top: 0; left: 0; width: 40px; height: 2px; }
+        .bracket.tl::after { top: 0; left: 0; width: 2px; height: 40px; }
+        .bracket.tr { top: 30px; right: 30px; }
+        .bracket.tr::before { top: 0; right: 0; width: 40px; height: 2px; }
+        .bracket.tr::after { top: 0; right: 0; width: 2px; height: 40px; }
+        .bracket.bl { bottom: 30px; left: 30px; }
+        .bracket.bl::before { bottom: 0; left: 0; width: 40px; height: 2px; }
+        .bracket.bl::after { bottom: 0; left: 0; width: 2px; height: 40px; }
+        .bracket.br { bottom: 30px; right: 30px; }
+        .bracket.br::before { bottom: 0; right: 0; width: 40px; height: 2px; }
+        .bracket.br::after { bottom: 0; right: 0; width: 2px; height: 40px; }
+        .scan-sweep {
+            position: fixed; left: 0; right: 0; height: 3px;
+            background: linear-gradient(90deg, transparent, #00f5ff, rgba(0,245,255,0.3), transparent);
+            box-shadow: 0 0 20px #00f5ff, 0 0 40px rgba(0,245,255,0.5);
+            z-index: 9; pointer-events: none;
+            animation: splashScanMove 4s ease-in-out infinite 2s; opacity: 0.7;
+        }
+        @keyframes splashFadeSlideDown { from { opacity: 0; transform: translateY(-14px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes splashFadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes splashSpecReveal { 0% { opacity: 0; } 100% { opacity: 1; } }
+        @keyframes splashBlink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        @keyframes splashPulseDot {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 10px #00f5ff, 0 0 20px #00f5ff; }
+            50% { transform: scale(1.5); box-shadow: 0 0 15px #00f5ff, 0 0 35px #00f5ff, 0 0 60px rgba(0,245,255,0.4); }
+        }
+        @keyframes splashScanMove {
+            0% { top: -10px; opacity: 0; } 5% { opacity: 0.8; } 95% { opacity: 0.8; } 100% { top: 100%; opacity: 0; }
+        }
+        /* ===== END SPLASH SCREEN STYLES ===== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0d1929 100%);
+            color: #e0e0e0;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            background: rgba(10, 14, 39, 0.95);
+            border-bottom: 3px solid #00d4ff;
+            padding: 1rem 2.5rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+            transform: translateY(-100%);
+            transition: transform 0.4s ease;
+        }
+
+        header.visible {
+            transform: translateY(0);
+        }
+
+        .header-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0;
+        }
+
+        .header-left-logo,
+        .header-right-logo {
+            flex-shrink: 0;
+        }
+
+        .header-left-logo img {
+            height: 80px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.5));
+        }
+
+        .header-right-logo img {
+            height: 95px;
+            width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 0 8px rgba(0, 212, 255, 0.5));
+        }
+
+        .header-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.3rem;
+            text-align: center;
+        }
+
+        .header-logo h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.2rem;
+            font-weight: 900;
+            color: #00d4ff;
+            text-shadow: 0 0 20px #00d4ff;
+            letter-spacing: 3px;
+        }
+
+        .header-logo p {
+            font-size: 0.85rem;
+            color: #ffd700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        /* Hero Banner */
+        .hero {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            margin: 2rem;
+            padding: 4rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.3), inset 0 0 30px rgba(0, 212, 255, 0.05);
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+            animation: shimmer 8s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, #00d4ff 0%, #ffd700 50%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            letter-spacing: 3px;
+        }
+
+        .hero-subtitle {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.5rem;
+            color: #ffd700;
+            font-style: italic;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .hero-tagline {
+            font-size: 1.2rem;
+            color: #00d4ff;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        /* Enhanced College Info Style */
+        .college-info {
+            color: #00ff88;
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+            font-weight: 800;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            text-shadow: 0 0 15px rgba(0, 255, 136, 0.6), 0 0 30px rgba(0, 212, 255, 0.3);
+            animation: glow 3s ease-in-out infinite;
+        }
+
+        @keyframes glow {
+            0%, 100% { text-shadow: 0 0 15px rgba(0, 255, 136, 0.6), 0 0 30px rgba(0, 212, 255, 0.3); }
+            50% { text-shadow: 0 0 25px rgba(0, 255, 136, 0.8), 0 0 40px rgba(0, 212, 255, 0.5); }
+        }
+
+        /* Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* Event Info Bar */
+        .event-info-bar {
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 3rem 2rem;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .info-box {
+            text-align: center;
+            padding: 1.5rem;
+            background: rgba(10, 14, 39, 0.5);
+            border-radius: 8px;
+            border-left: 4px solid #00ff88;
+        }
+
+        .info-box h3 {
+            color: #00d4ff;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-box p {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #00ff88;
+        }
+
+        /* Events Section */
+        .events-section {
+            margin: 4rem 2rem;
+        }
+
+        .section-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #00d4ff;
+            text-shadow: 0 0 20px #00d4ff;
+            margin-bottom: 3rem;
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .events-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .event-card {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(255, 215, 0, 0.05) 100%);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.4s;
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .event-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.3), transparent);
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+
+        .event-card:hover {
+            transform: translateY(-10px);
+            border-color: #00ff88;
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.5), inset 0 0 20px rgba(0, 212, 255, 0.1);
+        }
+
+        .event-card:hover::before {
+            opacity: 1;
+        }
+
+        .event-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .event-card h3 {
+            font-size: 1.4rem;
+            color: #00ff88;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 800;
+        }
+
+        .event-type {
+            font-size: 0.85rem;
+            color: #ffd700;
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        .event-card p {
+            color: #b0b0b0;
+            font-size: 0.95rem;
+            line-height: 1.6;
+        }
+
+        /* Departments Section */
+        .departments-section {
+            margin: 4rem 2rem;
+            background: rgba(0, 212, 255, 0.05);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .departments-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .dept-card {
+            background: rgba(10, 14, 39, 0.7);
+            border: 2px solid #ffd700;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .dept-card:hover {
+            background: rgba(10, 14, 39, 0.9);
+            border-color: #00d4ff;
+            box-shadow: 0 0 25px rgba(255, 215, 0, 0.4);
+        }
+
+        .dept-card h4 {
+            color: #ffd700;
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dept-card p {
+            color: #00ff88;
+            font-weight: 600;
+        }
+
+        /* Sponsors Section */
+        .sponsors-section {
+            margin: 4rem 2rem;
+            background: rgba(0, 212, 255, 0.05);
+            border: 2px solid #00ff88;
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.2);
+        }
+
+        .sponsors-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+            align-items: center;
+            justify-items: center;
+        }
+
+        .sponsor-logo {
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid #00ff88;
+            border-radius: 10px;
+            padding: 2rem;
+            width: 150px;
+            height: 100px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #00d4ff;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .sponsor-logo:hover {
+            background: rgba(0, 212, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        /* Contact Section */
+        .contact-section {
+            margin: 4rem 2rem;
+            background: rgba(0, 212, 255, 0.1);
+            border: 2px solid #00d4ff;
+            border-radius: 15px;
+            padding: 3rem 2rem;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 3rem;
+            margin-top: 2rem;
+        }
+
+        .contact-box h4 {
+            color: #00ff88;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid #00d4ff;
+            padding-bottom: 1rem;
+        }
+
+        .contact-person {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(0, 212, 255, 0.3);
+        }
+
+        .contact-person:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .contact-name {
+            color: #00d4ff;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 0.3rem;
+        }
+
+        .contact-phone {
+            color: #00ff88;
+            font-size: 0.9rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .contact-email {
+            color: #ffd700;
+            font-size: 0.9rem;
+            font-family: 'Space Mono', monospace;
+        }
+
+        /* CTA Button */
+        .cta-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #00d4ff, #00ff88);
+            color: #000;
+            padding: 1.2rem 3rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 800;
+            font-size: 1.1rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.4s;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+            margin: 2rem auto;
+            display: block;
+            width: fit-content;
+        }
+
+        .cta-button:hover {
+            background: linear-gradient(135deg, #00ff88, #00d4ff);
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.9);
+            transform: translateY(-3px);
+        }
+
+        /* Footer */
+        footer {
+            background: rgba(10, 14, 39, 0.95);
+            border-top: 3px solid #00d4ff;
+            padding: 3rem 2rem;
+            margin-top: 4rem;
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.2);
+        }
+
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .footer-top {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #00d4ff;
+        }
+
+        .footer-section h3 {
+            color: #00d4ff;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 1rem;
+        }
+
+        .footer-section p {
+            color: #00ff88;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-section a {
+            color: #00d4ff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer-section a:hover {
+            color: #00ff88;
+            text-shadow: 0 0 10px #00d4ff;
+        }
+
+        .social-links {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .social-links a {
+            display: inline-block;
+            width: 35px;
+            height: 35px;
+            background: rgba(0, 212, 255, 0.2);
+            border: 1px solid #00d4ff;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .social-links a:hover {
+            background: #00d4ff;
+            color: #000;
+        }
+
+        .footer-bottom {
+            text-align: center;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
+        .footer-bottom p {
+            margin: 0.5rem 0;
+        }
+
+        /* Mobile First Responsive Design */
+        @media (max-width: 1024px) {
+            .header-left-logo img {
+                height: 68px;
+            }
+
+            .header-right-logo img {
+                height: 78px;
+            }
+
+            .header-logo h1 {
+                font-size: 1.8rem;
+            }
+
+            .header-logo p {
+                font-size: 0.75rem;
+            }
+
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+
+            .hero-tagline {
+                font-size: 1rem;
+            }
+
+            .college-info {
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* Header */
+            header {
+                padding: 0.8rem 1.5rem;
+            }
+
+            .header-left-logo img {
+                height: 52px;
+            }
+
+            .header-right-logo img {
+                height: 60px;
+            }
+
+            .header-logo h1 {
+                font-size: 1.4rem;
+                letter-spacing: 2px;
+            }
+
+            .header-logo p {
+                font-size: 0.65rem;
+                letter-spacing: 0.5px;
+            }
+
+            /* Hero */
+            .hero {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+                border-radius: 12px;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+                margin-bottom: 1rem;
+            }
+
+            .hero-tagline {
+                font-size: 0.95rem;
+                margin-bottom: 1rem;
+            }
+
+            .college-info {
+                font-size: 1.1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            /* Info Bar */
+            .event-info-bar {
+                margin: 2rem 1rem;
+                padding: 1.5rem;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .info-box {
+                padding: 1rem;
+                border-radius: 8px;
+            }
+
+            .info-box h3 {
+                font-size: 0.85rem;
+            }
+
+            .info-box p {
+                font-size: 1.1rem;
+            }
+
+            /* Events Grid */
+            .events-section {
+                margin: 2rem 1rem;
+            }
+
+            .section-title {
+                font-size: 1.8rem;
+                margin-bottom: 2rem;
+                letter-spacing: 1px;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .event-card {
+                padding: 1.5rem;
+                border-radius: 12px;
+            }
+
+            .event-icon {
+                font-size: 3rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .event-card h3 {
+                font-size: 1.2rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .event-type {
+                font-size: 0.8rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .event-card p {
+                font-size: 0.9rem;
+            }
+
+            /* CTA Button */
+            .cta-button {
+                padding: 1rem 2rem;
+                font-size: 1rem;
+                width: 90%;
+                margin: 1.5rem auto;
+            }
+
+            /* Departments Section */
+            .departments-section {
+                margin: 2rem 1rem;
+                padding: 2rem 1.5rem;
+                border-radius: 12px;
+            }
+
+            .departments-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1.5rem;
+                margin-top: 1.5rem;
+            }
+
+            .dept-card {
+                padding: 1.5rem;
+                border-radius: 8px;
+            }
+
+            .dept-card h4 {
+                font-size: 1rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .dept-card p {
+                font-size: 0.85rem;
+            }
+
+            /* Contact Section */
+            .contact-section {
+                margin: 2rem 1rem;
+                padding: 2rem 1.5rem;
+                border-radius: 12px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 2rem;
+            }
+
+            .contact-box h4 {
+                font-size: 1.05rem;
+                margin-bottom: 1rem;
+            }
+
+            .contact-name {
+                font-size: 1rem;
+            }
+
+            .contact-phone,
+            .contact-email {
+                font-size: 0.85rem;
+            }
+
+            /* Footer */
+            footer {
+                padding: 2rem 1.5rem;
+            }
+
+            .footer-top {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .footer-section h3 {
+                font-size: 0.95rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .footer-section p {
+                font-size: 0.85rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .footer-bottom p {
+                font-size: 0.75rem;
+            }
+
+            .social-links {
+                gap: 0.7rem;
+            }
+
+            .social-links a {
+                width: 32px;
+                height: 32px;
+                font-size: 0.9rem;
+            }
+
+            /* Container */
+            .container {
+                padding: 0 1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Header */
+            header {
+                padding: 0.6rem 1rem;
+            }
+
+            .header-left-logo img {
+                height: 42px;
+            }
+
+            .header-right-logo img {
+                height: 48px;
+            }
+
+            .header-logo h1 {
+                font-size: 1.1rem;
+                letter-spacing: 1px;
+            }
+
+            .header-logo p {
+                font-size: 0.55rem;
+                letter-spacing: 0.3px;
+            }
+
+            /* Hero */
+            .hero {
+                margin: 0.8rem;
+                padding: 1.5rem 1rem;
+                border-radius: 10px;
+                border-width: 1px;
+            }
+
+            .hero h1 {
+                font-size: 1.6rem;
+                margin-bottom: 0.4rem;
+                letter-spacing: 1px;
+            }
+
+            .hero-subtitle {
+                font-size: 0.9rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .hero-tagline {
+                font-size: 0.85rem;
+                margin-bottom: 0.8rem;
+            }
+
+            .college-info {
+                font-size: 0.95rem;
+                margin-bottom: 1.5rem;
+                letter-spacing: 0.5px;
+            }
+
+            .hero-content {
+                padding: 0;
+            }
+
+            /* Info Bar */
+            .event-info-bar {
+                margin: 1.5rem 0.8rem;
+                padding: 1.2rem;
+                grid-template-columns: 1fr;
+                gap: 0.8rem;
+            }
+
+            .info-box {
+                padding: 0.8rem;
+                border-radius: 6px;
+                border-width: 1px;
+            }
+
+            .info-box h3 {
+                font-size: 0.75rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .info-box p {
+                font-size: 0.95rem;
+            }
+
+            /* Events Grid */
+            .events-section {
+                margin: 1.5rem 0.8rem;
+                padding: 0;
+            }
+
+            .section-title {
+                font-size: 1.4rem;
+                margin-bottom: 1.5rem;
+                letter-spacing: 0.5px;
+            }
+
+            .events-grid {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+            }
+
+            .event-card {
+                padding: 1.2rem;
+                border-radius: 10px;
+                border-width: 1px;
+            }
+
+            .event-icon {
+                font-size: 2.5rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .event-card h3 {
+                font-size: 1.1rem;
+                margin-bottom: 0.2rem;
+            }
+
+            .event-type {
+                font-size: 0.75rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .event-card p {
+                font-size: 0.85rem;
+                line-height: 1.5;
+            }
+
+            /* CTA Button */
+            .cta-button {
+                padding: 0.9rem 1.8rem;
+                font-size: 0.9rem;
+                width: 85%;
+                margin: 1.2rem auto;
+                letter-spacing: 1px;
+            }
+
+            /* Departments Section */
+            .departments-section {
+                margin: 1.5rem 0.8rem;
+                padding: 1.5rem 1rem;
+                border-radius: 10px;
+                border-width: 1px;
+            }
+
+            .departments-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                margin-top: 1rem;
+            }
+
+            .dept-card {
+                padding: 1.2rem;
+                border-radius: 8px;
+                border-width: 1px;
+            }
+
+            .dept-card h4 {
+                font-size: 0.95rem;
+                margin-bottom: 0.4rem;
+            }
+
+            .dept-card p {
+                font-size: 0.8rem;
+            }
+
+            /* Contact Section */
+            .contact-section {
+                margin: 1.5rem 0.8rem;
+                padding: 1.5rem 1rem;
+                border-radius: 10px;
+                border-width: 1px;
+            }
+
+            .contact-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .contact-box h4 {
+                font-size: 1rem;
+                margin-bottom: 0.8rem;
+                padding-bottom: 0.8rem;
+            }
+
+            .contact-person {
+                margin-bottom: 1.2rem;
+                padding-bottom: 1rem;
+            }
+
+            .contact-name {
+                font-size: 0.95rem;
+                margin-bottom: 0.2rem;
+            }
+
+            .contact-phone,
+            .contact-email {
+                font-size: 0.8rem;
+            }
+
+            /* Footer */
+            footer {
+                padding: 1.5rem 1rem;
+                border-top-width: 2px;
+            }
+
+            .footer-content {
+                padding: 0;
+            }
+
+            .footer-top {
+                grid-template-columns: 1fr;
+                gap: 1.2rem;
+                margin-bottom: 1.2rem;
+                padding-bottom: 1.2rem;
+            }
+
+            .footer-section h3 {
+                font-size: 0.9rem;
+                margin-bottom: 0.6rem;
+            }
+
+            .footer-section p {
+                font-size: 0.8rem;
+                margin-bottom: 0.3rem;
+            }
+
+            .footer-bottom {
+                text-align: center;
+                padding: 0;
+            }
+
+            .footer-bottom p {
+                font-size: 0.7rem;
+                margin: 0.3rem 0;
+                line-height: 1.4;
+            }
+
+            .social-links {
+                gap: 0.6rem;
+                margin-top: 0.8rem;
+            }
+
+            .social-links a {
+                width: 30px;
+                height: 30px;
+                font-size: 0.8rem;
+            }
+
+            /* Container */
+            .container {
+                padding: 0 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <canvas id="matrixCanvas"></canvas>
+        <canvas id="gridCanvas"></canvas>
+        <div class="vignette"></div>
+        <div class="scanlines"></div>
+        <div class="scan-sweep"></div>
+        <div class="bracket tl"></div>
+        <div class="bracket tr"></div>
+        <div class="bracket bl"></div>
+        <div class="bracket br"></div>
+        <div class="stage">
+            <div class="accent-lines">
+                <div class="accent-line"></div>
+                <div class="accent-dot"></div>
+                <div class="accent-line right"></div>
+            </div>
+            <div class="sub-label">◈ &nbsp; Department of CSE (AI&ML) &nbsp; ◈</div>
+            <div class="main-text-wrap">
+                <div class="welcome-line">— &nbsp; Welcome To &nbsp; —</div>
+                <div class="spec-line">SPECFIESTA</div>
+                <div class="year-line">2K26</div>
+            </div>
+            <div class="divider">
+                <div class="div-line"></div>
+                <div class="div-diamond"></div>
+                <div class="div-line"></div>
+            </div>
+            <div class="tagline-wrap">
+                <span class="tagline" id="tagline"></span><span class="t-cursor" id="tcursor"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-container">
+            <div class="header-left-logo">
+                <img src="spec.png" alt="St. Peter's Engineering College">
+            </div>
+            <div class="header-logo">
+                <h1>SpecFiesta 2K26</h1>
+                <p>Department of CSE (AI & ML)</p>
+            </div>
+            <div class="header-right-logo">
+                <img src="gradient.png" alt="Gradient Club">
+            </div>
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1>SpecFiesta 2K26</h1>
+            <p class="hero-subtitle">TECHNICAL FEST</p>
+            <p class="hero-tagline">🏆 Creativity | Innovation | Excellence 🏆</p>
+            <p class="college-info">St. Peter's Engineering College | Department of CSE (AI & ML)</p>
+        </div>
+    </section>
+
+    <!-- Event Information Bar -->
+    <div class="event-info-bar">
+        <div class="info-box">
+            <h3>📅 Date</h3>
+            <p>28th February 2026</p>
+        </div>
+        <div class="info-box">
+            <h3>⏰ Time</h3>
+            <p>9:00 AM Onwards</p>
+        </div>
+        <div class="info-box">
+            <h3>📍 Venue</h3>
+            <p>St. Peter's Campus</p>
+        </div>
+        <div class="info-box">
+            <h3>🎯 Theme</h3>
+            <p>Technical Innovation</p>
+        </div>
+    </div>
+
+    <!-- Events Section -->
+    <div class="container">
+        <section class="events-section" id="events">
+            <h2 class="section-title">⚡ Featured Events ⚡</h2>
+            
+            <div class="events-grid">
+                <div class="event-card">
+                    <div class="event-icon">🎮</div>
+                    <h3>Quest Arena</h3>
+                    <p class="event-type">Animation Game</p>
+                    <p>Experience interactive gaming with cutting-edge animation and immersive gameplay challenges.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🏗️</div>
+                    <h3>Build Sphere</h3>
+                    <p class="event-type">Project Expo</p>
+                    <p>Showcase innovative projects and technological solutions in front of industry experts.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">💻</div>
+                    <h3>Code Shuffle</h3>
+                    <p class="event-type">Code Rearrangement</p>
+                    <p>Challenge your programming skills in fast-paced coding puzzles and logic games.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🌐</div>
+                    <h3>Theme 2 Web</h3>
+                    <p class="event-type">Web Page Creation</p>
+                    <p>Design stunning and responsive web pages based on innovative themes and requirements.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">⚙️</div>
+                    <h3>Techno Blitz</h3>
+                    <p class="event-type">Paper Presentation</p>
+                    <p>Present your technical research and innovations to an engaged audience of professionals.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">📊</div>
+                    <h3>Mindscape</h3>
+                    <p class="event-type">Poster Presentation</p>
+                    <p>Create compelling visual presentations showcasing your ideas and research findings.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🎭</div>
+                    <h3>Act-o-Tech</h3>
+                    <p class="event-type">Tech Dumb Charades</p>
+                    <p>Combine entertainment and technology in this fun and engaging interactive game.</p>
+                </div>
+
+                <div class="event-card">
+                    <div class="event-icon">🏅</div>
+                    <h3>Exciting Prizes</h3>
+                    <p class="event-type">Win & Rewards</p>
+                    <p>Compete for amazing prizes, certificates, and recognition in all categories.</p>
+                </div>
+            </div>
+
+            
+        </section>
+    </div>
+
+    <!-- Departments Section -->
+    <section class="departments-section">
+        <div class="container">
+            <h2 class="section-title" style="margin-bottom: 1.5rem;">🎓 Organizing Department</h2>
+            <div class="departments-grid">
+                <div class="dept-card">
+                    <h4>🏫 St. Peter's</h4>
+                    <p>Engineering College</p>
+                </div>
+                <div class="dept-card">
+                    <h4>🤖 AI & ML</h4>
+                    <p>Artificial Intelligence & Machine Learning</p>
+                </div>
+                <div class="dept-card">
+                    <h4>🌟 Gradient Club</h4>
+                    <p>Ideas are Automated</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section class="contact-section" id="contact">
+        <div class="container">
+            <h2 class="section-title" style="margin-bottom: 2rem;">📞 Contact Information</h2>
+            
+            <div class="contact-grid">
+                <div class="contact-box">
+                    <h4>Faculty Coordinators</h4>
+                    <div class="contact-person">
+                        <div class="contact-name">Dr. K. Rajiv</div>
+                        <div class="contact-phone">☎ 9553397888</div>
+                    </div>
+                    <div class="contact-person">
+                        <div class="contact-name">Mrs. N. Laharika</div>
+                        <div class="contact-phone">☎ 6309408576</div>
+                    </div>
+                    <div class="contact-person">
+                        <div class="contact-name">Mrs. P.L. Shailaja</div>
+                        <div class="contact-phone">☎ 7386370442</div>
+                    </div>
+                </div>
+
+                <div class="contact-box">
+                    <h4>Student Coordinators</h4>
+                    <div class="contact-person">
+                        <div class="contact-name">M. Anusha</div>
+                        <div class="contact-phone">☎ 9703732604</div>
+                    </div>
+                    <div class="contact-person">
+                        <div class="contact-name">Suraj Choudhary</div>
+                        <div class="contact-phone">☎ 7989093084</div>
+                    </div>
+                </div>
+
+                <div class="contact-box">
+                    <h4>Connect With Us</h4>
+                    <div class="contact-person">
+                        <div class="contact-email">📧 specgradient@gmail.com</div>
+                    </div>
+                    <div class="contact-person">
+                        <div class="contact-email">📱 @gradient_spec</div>
+                    </div>
+                    <div class="contact-person">
+                        <div class="contact-email">💼 The SPEC Gradient Club</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-content">
+            <div class="footer-top">
+                <div class="footer-section">
+                    <h3>About SpecFiesta</h3>
+                    <p>A flagship technical festival organized by the Department of CSE (AI & ML) to celebrate innovation and creativity.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <p><a href="#events">Events</a></p>
+                    <p><a href="#contact">Contact Us</a></p>
+                    
+                </div>
+                <div class="footer-section">
+                    <h3>Follow Us</h3>
+                    <div class="social-links">
+                        <a href="https://www.instagram.com/gradient_spec?igsh=MW13NGFxeTBvZnJoNg%3D%3D" title="Instagram"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 0C5.829 0 5.556.01 4.703.048 3.85.088 3.269.222 2.76.42a3.9 3.9 0 0 0-1.417.923A3.9 3.9 0 0 0 .42 2.76C.222 3.268.087 3.85.048 4.7.01 5.555 0 5.827 0 8.001c0 2.172.01 2.444.048 3.297.04.852.174 1.433.372 1.942.205.526.478.972.923 1.417.444.445.89.719 1.416.923.51.198 1.09.333 1.942.372C5.555 15.99 5.827 16 8 16s2.444-.01 3.298-.048c.851-.04 1.434-.174 1.943-.372a3.9 3.9 0 0 0 1.416-.923c.445-.445.718-.891.923-1.417.197-.509.332-1.09.372-1.942C15.99 10.445 16 10.173 16 8s-.01-2.445-.048-3.299c-.04-.851-.175-1.433-.372-1.941a3.9 3.9 0 0 0-.923-1.417A3.9 3.9 0 0 0 13.24.42c-.51-.198-1.092-.333-1.943-.372C10.443.01 10.172 0 7.998 0zm-.717 1.442h.718c2.136 0 2.389.007 3.232.046.78.035 1.204.166 1.486.275.373.145.64.319.92.599s.453.546.598.92c.11.281.24.705.275 1.485.039.843.047 1.096.047 3.231s-.008 2.389-.047 3.232c-.035.78-.166 1.203-.275 1.485a2.5 2.5 0 0 1-.599.919c-.28.28-.546.453-.92.598-.28.11-.704.24-1.485.276-.843.038-1.096.047-3.232.047s-2.39-.009-3.233-.047c-.78-.036-1.203-.166-1.485-.276a2.5 2.5 0 0 1-.92-.598 2.5 2.5 0 0 1-.6-.92c-.109-.281-.24-.705-.275-1.485-.038-.843-.046-1.096-.046-3.233s.008-2.388.046-3.231c.036-.78.166-1.204.276-1.486.145-.373.319-.64.599-.92s.546-.453.92-.598c.282-.11.705-.24 1.485-.276.738-.034 1.024-.044 2.515-.045zm4.988 1.328a.96.96 0 1 0 0 1.92.96.96 0 0 0 0-1.92m-4.27 1.122a4.109 4.109 0 1 0 0 8.217 4.109 4.109 0 0 0 0-8.217m0 1.441a2.667 2.667 0 1 1 0 5.334 2.667 2.667 0 0 1 0-5.334"/></svg></a>
+                        <a href="http://linkedin.com/company/spec-gradient-club/" title="LinkedIn"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M0 1.146C0 .513.526 0 1.175 0h13.65C15.474 0 16 .513 16 1.146v13.708c0 .633-.526 1.146-1.175 1.146H1.175C.526 16 0 15.487 0 14.854zm4.943 12.248V6.169H2.542v7.225zm-1.2-8.212c.837 0 1.358-.554 1.358-1.248-.015-.709-.52-1.248-1.342-1.248S2.4 3.226 2.4 3.934c0 .694.521 1.248 1.327 1.248zm4.908 8.212V9.359c0-.216.016-.432.08-.586.173-.431.568-.878 1.232-.878.869 0 1.216.662 1.216 1.634v3.865h2.401V9.25c0-2.22-1.184-3.252-2.764-3.252-1.274 0-1.845.7-2.165 1.193v.025h-.016l.016-.025V6.169h-2.4c.03.678 0 7.225 0 7.225z"/></svg></a>
+                        <a href="https://unstop.com/college-fests/specfiesta-2k26-st-peters-engineering-college-spec-hyderabad-telangana-442403" title="Unstop"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M9.482 9.341c-.069.062-.17.153-.17.309 0 .162.107.325.3.456.877.613 2.521.54 2.592.538h.002c.667 0 1.32-.18 1.894-.519A3.84 3.84 0 0 0 16 6.819c.018-1.316-.44-2.218-.666-2.664l-.04-.08C13.963 1.487 11.106 0 8 0A8 8 0 0 0 .473 5.29C1.488 4.048 3.183 3.262 5 3.262c2.83 0 5.01 1.885 5.01 4.797h-.004v.002c0 .338-.168.832-.487 1.244l.006-.006z"/><path d="M.01 7.753a8.14 8.14 0 0 0 .753 3.641 8 8 0 0 0 6.495 4.564 5 5 0 0 1-.785-.377h-.01l-.12-.075a5.5 5.5 0 0 1-1.56-1.463A5.543 5.543 0 0 1 6.81 5.8l.01-.004.025-.012c.208-.098.62-.292 1.167-.285q.194.001.384.033a4 4 0 0 0-.993-.698l-.01-.005C6.348 4.282 5.199 4.263 5 4.263c-2.44 0-4.824 1.634-4.99 3.49m10.263 7.912q.133-.04.265-.084-.153.047-.307.086z"/><path d="M10.228 15.667a5 5 0 0 0 .303-.086l.082-.025a8.02 8.02 0 0 0 4.162-3.3.25.25 0 0 0-.331-.35q-.322.168-.663.294a6.4 6.4 0 0 1-2.243.4c-2.957 0-5.532-2.031-5.532-4.644q.003-.203.046-.399a4.54 4.54 0 0 0-.46 5.898l.003.005c.315.441.707.821 1.158 1.121h.003l.144.09c.877.55 1.721 1.078 3.328.996"/></svg></a>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>© 2026 SpecFiesta | Department of CSE (AI & ML) | St. Peter's Engineering College</p>
+                <p>Affiliated to JNTU Hyderabad | UGC Autonomous Institution</p>
+                <p>Empowering Innovation Through Technology</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        /* ── SPLASH SCREEN: MATRIX RAIN ── */
+        (function(){
+            const c=document.getElementById('matrixCanvas');
+            const ctx=c.getContext('2d');
+            let W,H,cols,drops,intervalId;
+            function init(){
+                W=c.width=window.innerWidth;H=c.height=window.innerHeight;
+                cols=Math.floor(W/14);drops=Array(cols).fill(1);
+            }
+            init();window.addEventListener('resize',init);
+            const chars='アイウエオカキクケコ0123456789ABCDEF<>{}[]\\/*+-=~';
+            function draw(){
+                ctx.fillStyle='rgba(0,0,0,0.05)';ctx.fillRect(0,0,W,H);
+                for(let i=0;i<drops.length;i++){
+                    const ch=chars[Math.floor(Math.random()*chars.length)];
+                    ctx.fillStyle=Math.random()>0.95?'#aff':'#0af';
+                    ctx.font='14px Share Tech Mono,monospace';
+                    ctx.fillText(ch,i*14,drops[i]*14);
+                    if(drops[i]*14>H&&Math.random()>0.975)drops[i]=0;
+                    drops[i]++;
+                }
+            }
+            intervalId=setInterval(draw,45);
+            // Stop matrix when splash is removed
+            window._stopMatrix=function(){clearInterval(intervalId);};
+        })();
+
+        /* ── SPLASH SCREEN: PERSPECTIVE GRID ── */
+        (function(){
+            const c=document.getElementById('gridCanvas');
+            const ctx=c.getContext('2d');
+            let W,H,offset=0,intervalId;
+            function init(){W=c.width=window.innerWidth;H=c.height=window.innerHeight;}
+            init();window.addEventListener('resize',init);
+            function drawGrid(){
+                ctx.clearRect(0,0,W,H);
+                const horizon=H*0.52;
+                const gc='rgba(0,200,255,';
+                for(let i=0;i<22;i++){
+                    const t=i/22;
+                    const y=horizon+(H-horizon)*Math.pow(t,1.8);
+                    const scroll=offset*t*0.8;
+                    const sy=horizon+((y-horizon+scroll)%(H-horizon));
+                    ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(W,sy);
+                    ctx.strokeStyle=gc+(t*0.5)+')';ctx.lineWidth=0.8;ctx.stroke();
+                }
+                for(let i=0;i<=28;i++){
+                    const xB=-W*0.3+i*(W*1.6/28);
+                    const alpha=0.08+0.22*(1-Math.abs(i/28-0.5)*2);
+                    ctx.beginPath();
+                    ctx.moveTo(W/2+(xB-W/2)*0.01,horizon);
+                    ctx.lineTo(xB,H);
+                    ctx.strokeStyle=gc+alpha+')';ctx.lineWidth=0.7;ctx.stroke();
+                }
+                const grad=ctx.createLinearGradient(0,0,W,0);
+                grad.addColorStop(0,'transparent');
+                grad.addColorStop(0.3,'rgba(0,220,255,0.7)');
+                grad.addColorStop(0.5,'rgba(0,240,255,1)');
+                grad.addColorStop(0.7,'rgba(0,220,255,0.7)');
+                grad.addColorStop(1,'transparent');
+                ctx.beginPath();ctx.moveTo(0,horizon);ctx.lineTo(W,horizon);
+                ctx.strokeStyle=grad;ctx.lineWidth=2.5;ctx.stroke();
+                ctx.beginPath();ctx.moveTo(0,horizon);ctx.lineTo(W,horizon);
+                ctx.strokeStyle='rgba(0,245,255,0.2)';ctx.lineWidth=14;ctx.stroke();
+                offset+=0.4;
+            }
+            intervalId=setInterval(drawGrid,30);
+            window._stopGrid=function(){clearInterval(intervalId);};
+        })();
+
+        /* ── SPLASH SCREEN: TAGLINE TYPEWRITER ── */
+        (function(){
+            const text='[ TECH  •  INNOVATION  •  EXCELLENCE ]';
+            const el=document.getElementById('tagline');
+            const cur=document.getElementById('tcursor');
+            let i=0;
+            function type(){
+                if(i<text.length){el.textContent+=text[i++];setTimeout(type,55+Math.random()*35);}
+                else setTimeout(()=>{cur.style.animation='none';cur.style.opacity='1';},2000);
+            }
+            setTimeout(type,3500);
+        })();
+
+        /* ── AUTO-DISMISS SPLASH AFTER 7 SECONDS ── */
+        (function(){
+            const splash = document.getElementById('splash-screen');
+            // Also allow click to skip
+            splash.addEventListener('click', dismissSplash);
+            setTimeout(dismissSplash, 7000);
+            let dismissed = false;
+            function dismissSplash() {
+                if (dismissed) return;
+                dismissed = true;
+                splash.classList.add('fade-out');
+                setTimeout(() => {
+                    splash.remove();
+                    if (window._stopMatrix) window._stopMatrix();
+                    if (window._stopGrid) window._stopGrid();
+                }, 1000);
+            }
+        })();
+
+        // Show/hide header on scroll
+        (function() {
+            const header = document.querySelector('header');
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 50) {
+                    header.classList.add('visible');
+                } else {
+                    header.classList.remove('visible');
+                }
+            });
+        })();
+
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+
+        // Register button
+        document.getElementById('register').addEventListener('click', function() {
+            alert('Registration portal will open soon! Stay tuned for updates.');
+        });
+
+        // Animate event cards on scroll
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.animation = 'fadeInUp 0.6s ease-out forwards';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.event-card').forEach(card => {
+            observer.observe(card);
+        });
+
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
